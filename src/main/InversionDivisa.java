@@ -20,6 +20,14 @@ public class InversionDivisa extends Inversion{
 		 double interesesEnDivisas = divisasEquivalente * (tasa/365) * diasTranscurridos;
 		 return interesesEnDivisas * Utilitarios.consultarCotizacion(divisa); 
 	 }
+	 @Override
+	 public double calcularDevolucion() {
+	     int diasTranscurridos = Utilitarios.hoy().getDayOfYear() - getFechaInicio().getDayOfYear();
+	     double divisasEquivalente = getMonto() / cotizacionInicial;
+	     double interesesEnDivisa = divisasEquivalente * (tasa / 365) * diasTranscurridos;
+	     interesesEnDivisa = interesesEnDivisa / 2;
+	     return (divisasEquivalente + interesesEnDivisa) * Utilitarios.consultarCotizacion(divisa);
+	 }
 	 //guardamos divisas para saber cotizacion al momento de calcular el rendimiento
 	 @Override
 	    public String describir() {

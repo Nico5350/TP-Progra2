@@ -114,7 +114,7 @@ public class Billetera implements IBilletera {
 		aliasCvu.put(alias, cvu);
 		titular.agregarCuentas(cuenta);
 				
-		return null;
+		return cvu;
 	}
 
 	@Override
@@ -155,12 +155,13 @@ public class Billetera implements IBilletera {
 
 	    origen.retirar(monto);
 	    destino.validarDeposito(monto);
-
+	    destino.depositar(monto);
+	    
 	    String dniOrigen = origen.obtenerTitular().obtenerDni();
 	    String dniDestino = destino.obtenerTitular().obtenerDni();
 
 	    Transferencia transferencia = new Transferencia(monto, true, dniOrigen, cvuOrigen, dniDestino, cvuDestino);
-
+	    
 	    origen.registrarActividad(transferencia);
 	    destino.registrarActividad(transferencia);
 	    actividades.add(transferencia);
@@ -278,7 +279,7 @@ public class Billetera implements IBilletera {
 	        throw new IllegalArgumentException("El fondo de liquidez empresarial no es precancelable");
 	    }
 	    double rendimiento = inversionEncontrada.calcularRendimiento();
-	    double montoADevolver = inversionEncontrada.getMonto() + rendimiento / 2;
+	    double montoADevolver = inversionEncontrada.calcularDevolucion();
 
 	    cuenta.depositar(montoADevolver);
 	    usuarios.get(dni).restarInvertido(inversionEncontrada.getMonto());

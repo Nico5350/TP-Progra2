@@ -44,6 +44,9 @@ public abstract class Inversion extends Actividad{
 	public void cancelar() {
 		activa = false;
 	}
+	public double calcularDevolucion() {
+	    return getMonto() + calcularRendimiento() / 2;
+	}
 	
 	public boolean esPrecancelable() {
 	    return true;
