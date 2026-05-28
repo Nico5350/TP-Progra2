@@ -19,6 +19,10 @@ public class FondoLiquidezEmpresarial extends Inversion{
 		double cotizacion = Utilitarios.consultarCotizacion(activo);
 		return getMonto() * cotizacion * (tasa/365) * diasTranscurridos;
 	}
+	@Override
+	public boolean esPrecancelable() {
+	    return false;
+	}
 	
 	@Override
     public String describir() {

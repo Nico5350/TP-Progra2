@@ -23,8 +23,11 @@ public abstract class Inversion extends Actividad{
         this.activa = true;
     }
 	
-	public int getDni() {
+	public int getId() {
 		return id;
+	}
+	public String getDni() {
+		return dni;
 	}
 	public int getPlazoDias() {
 		return plazoDias;
@@ -42,6 +45,13 @@ public abstract class Inversion extends Actividad{
 		activa = false;
 	}
 	
+	public boolean esPrecancelable() {
+	    return true;
+	}
+	@Override
+	public boolean esInversion() {
+	    return true;
+	}
 	public abstract double calcularRendimiento();
 	
 	public abstract String describir(); // formatos distintos de inversion

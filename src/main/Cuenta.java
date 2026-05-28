@@ -49,6 +49,8 @@ public abstract class Cuenta {
     public Usuario obtenerTitular() {
         return titular;
     }
+    public void validarDeposito(double monto) {
+    }
 
     public abstract String obtenerTipo();
 
