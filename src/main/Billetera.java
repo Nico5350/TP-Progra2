@@ -114,85 +114,298 @@ public class Billetera implements IBilletera {
 		aliasCvu.put(alias, cvu);
 		titular.agregarCuentas(cuenta);
 				
-		return null;
+		return cvu;
 	}
 
 	@Override
 	public List<String> obtenerCuentas(String dniUsuario) {
-		// TODO Auto-generated method stub
-		return null;
+		if(!usuarios.containsKey(dniUsuario)) { 	//verfica usuario
+			throw new IllegalArgumentException("El usuario no existe.");
+		}
+		List<String> resultado = new ArrayList<String>();
+		Usuario usuario = usuarios.get(dniUsuario);
+		
+		for(Cuenta cuenta : usuario.obtenerCuentas()) { //usa foreach para recorrer cuentas
+			resultado.add(cuenta.toString());
+		}
+		return resultado;
 	}
 
 	@Override
 	public double obtenerSaldoDisponible(String cvu) {
-		// TODO Auto-generated method stub
-		return 0;
+		if(!cuentas.containsKey(cvu)) {			//verifica si existe la cuenta
+			throw new IllegalArgumentException("La cuenta no existe");
+		}
+		return cuentas.get(cvu).obtenerSaldo();	//obtienie el saldo
 	}
 
 	@Override
 	public void realizarTransferencia(String cvuOrigen, String cvuDestino, double monto) {
-		// TODO Auto-generated method stub
+		//validaciones
+		if (!cuentas.containsKey(cvuOrigen))
+	        throw new IllegalArgumentException("La cuenta origen no existe");
+	    if (!cuentas.containsKey(cvuDestino))
+	        throw new IllegalArgumentException("La cuenta destino no existe");
+	    
+	    Cuenta origen = cuentas.get(cvuOrigen);
+	    Cuenta destino = cuentas.get(cvuDestino);
+	    
+	    if (origen.obtenerSaldo() < monto)
+	        throw new IllegalStateException("Saldo insuficiente.");
 
+	    origen.retirar(monto);
+	    destino.validarDeposito(monto);
+	    destino.depositar(monto);
+	    
+	    String dniOrigen = origen.obtenerTitular().obtenerDni();
+	    String dniDestino = destino.obtenerTitular().obtenerDni();
+
+	    Transferencia transferencia = new Transferencia(monto, true, dniOrigen, cvuOrigen, dniDestino, cvuDestino);
+	    
+	    origen.registrarActividad(transferencia);
+	    destino.registrarActividad(transferencia);
+	    actividades.add(transferencia);
 	}
 
 	@Override
 	public int realizarInversionRentaFija(String dni, String cvu, double monto, int plazoDias) {
-		// TODO Auto-generated method stub
-		return 0;
+		if (!usuarios.containsKey(dni))
+	        throw new IllegalArgumentException("El usuario no existe");
+	    if (!cuentas.containsKey(cvu))
+	        throw new IllegalArgumentException("La cuenta no exist");
+
+	    Cuenta cuenta = cuentas.get(cvu);
+	    //valida saldo
+	    if (cuenta.obtenerSaldo() < monto)
+	        throw new IllegalArgumentException("Saldo insuficiente");
+	    //crea nueva inversion
+	    int id = contadorIdInversion++;
+	    InversionRentaFija inversion = new InversionRentaFija(id, dni, cvu, monto, plazoDias, 0.20);
+
+	    cuenta.retirar(monto);
+	    usuarios.get(dni).agregarInvertido(monto);
+	    cuenta.registrarActividad(inversion);
+	    actividades.add(inversion);
+
+	    return id;
 	}
 
 	@Override
 	public int realizarInversionDivisa(String dni, String cvu, double monto, int plazoDias, String divisa,
 			double tasa) {
-		// TODO Auto-generated method stub
-		return 0;
+		//validaciones
+		 if (!usuarios.containsKey(dni))
+		        throw new IllegalArgumentException("El usuario no existe.");
+		 if (!cuentas.containsKey(cvu))
+		        throw new IllegalArgumentException("La cuenta no existe.");
+
+		    Cuenta cuenta = cuentas.get(cvu);
+		    //valida saldo 
+		if (cuenta.obtenerSaldo() < monto)
+		        throw new IllegalArgumentException("Saldo insuficiente.");
+			//crea nueva inversion de divisa con los paramtros correspondientes
+		    int id = contadorIdInversion++;
+		    InversionDivisa inversion = new InversionDivisa(id, dni, cvu, monto, plazoDias, divisa, tasa);
+
+		    cuenta.retirar(monto);
+		    usuarios.get(dni).agregarInvertido(monto);
+		    cuenta.registrarActividad(inversion);
+		    actividades.add(inversion);
+
+		    return id;
 	}
 
 	@Override
 	public int realizarInversionLiquidez(String dni, String cvu, double monto, int plazoDias) {
-		// TODO Auto-generated method stub
-		return 0;
+		//validaciones de cuenta y usuario
+		if (!usuarios.containsKey(dni)) {
+	        throw new IllegalArgumentException("El usuario no existe");
+		}
+		if (!cuentas.containsKey(cvu)) {
+	        throw new IllegalArgumentException("La cuenta no existe");
+		}
+	    Cuenta cuenta = cuentas.get(cvu);
+	    //valida tipo de cuenta y saldo o monto de inversion
+	    if (!(cuenta instanceof CuentaCorporativa)) {
+	        throw new IllegalArgumentException("Solo se puede invertir en liquidez desde cuentas corporativas");
+	    }
+	    if (monto < FondoLiquidezEmpresarial.obtenerMontoMinimo()) {
+	        throw new IllegalArgumentException("El monto minimo para invertir en liquidez es de 20 millones");
+	    }
+	    if (cuenta.obtenerSaldo() < monto) {
+	        throw new IllegalArgumentException("Saldo insuficiente");
+	    }
+	    //crea inversion
+	    int id = contadorIdInversion++;
+	    FondoLiquidezEmpresarial inversion = new FondoLiquidezEmpresarial(id, dni, cvu, monto, plazoDias);
+
+	    cuenta.retirar(monto);
+	    usuarios.get(dni).agregarInvertido(monto);
+	    cuenta.registrarActividad(inversion);
+	    actividades.add(inversion);
+
+	    return id;
 	}
 
 	@Override
 	public void precancelarInversion(String dni, String cvu, int idInversion) {
-		// TODO Auto-generated method stub
+		//validaciones de cuenta y usuario
+		if (!usuarios.containsKey(dni)) {
+	        throw new IllegalArgumentException("El usuario no existe");
+		}
+		if (!cuentas.containsKey(cvu)) {
+	        throw new IllegalArgumentException("La cuenta no existe");
+		}
+	    Cuenta cuenta = cuentas.get(cvu);
+	    Inversion inversionEncontrada = null;
+	    //recorre con foreach hasta encontrar la inversion
+	    // ahora recorre con un iterador
+	    Iterator<Actividad> it = cuenta.obtenerActividades().iterator();
+
+	    while (it.hasNext() && inversionEncontrada == null) {
+
+	        Actividad actividad = it.next();
+
+	        if (actividad.esInversion()) {
+
+	            Inversion inversion = (Inversion) actividad;
+
+	            if (inversion.getId() == idInversion) {
+	                inversionEncontrada = inversion;
+	            }
+	        }
+	    }
+
+	    if (inversionEncontrada == null)
+	        throw new IllegalArgumentException("La inversion no existe");{
+	        }
+	    if (!inversionEncontrada.estaActiva()) {
+	        throw new IllegalArgumentException("La inversion ya fue cancelada");
+	    }
+	    if (!inversionEncontrada.esPrecancelable()) {
+	        throw new IllegalArgumentException("El fondo de liquidez empresarial no es precancelable");
+	    }
+	    double rendimiento = inversionEncontrada.calcularRendimiento();
+	    double montoADevolver = inversionEncontrada.calcularDevolucion();
+
+	    cuenta.depositar(montoADevolver);
+	    usuarios.get(dni).restarInvertido(inversionEncontrada.getMonto());
+	    inversionEncontrada.cancelar();
 
 	}
 
 	@Override
 	public String consultarCvu(String alias) {
-		// TODO Auto-generated method stub
-		return null;
+		if(!aliasCvu.containsKey(alias)) {
+			throw new IllegalArgumentException("El alias no esta registrado");
+		}
+		return aliasCvu.get(alias); //busca en el map y devuelve el cvu
 	}
 
 	@Override
 	public List<String> consultarHistorialGlobal() {
-		// TODO Auto-generated method stub
-		return null;
+		List<String> resultado = new ArrayList<String>();
+		//recorre las actividades y devuelven
+		for(Actividad actividad : actividades) {
+			resultado.add(actividad.describir());
+		}
+		return resultado;
 	}
 
 	@Override
 	public List<String> consultarHistorialCuenta(String cvu) {
-		// TODO Auto-generated method stub
-		return null;
+		//valida la cuenta si existe
+		if(!cuentas.containsKey(cvu)) {
+			throw new IllegalArgumentException("La cuenta no existe");
+		}
+		List<String> resultado = new ArrayList<String>();
+		Cuenta cuenta = cuentas.get(cvu);
+		//recorre la actividad de una cuenta
+		for(Actividad actividad : cuenta.obtenerActividades()) {
+			resultado.add(actividad.describir());
+		}
+		return resultado;
 	}
 
 	@Override
 	public List<String> consultarHistorialUsuario(String dniUsuario) {
-		// TODO Auto-generated method stub
-		return null;
+		//valida cuenta
+		if (!usuarios.containsKey(dniUsuario))
+	        throw new IllegalArgumentException("El usuario no existe.");
+	    
+	    List<String> resultado = new ArrayList<String>();
+	    Usuario usuario = usuarios.get(dniUsuario);
+	    //recorre actividad de usuario
+	    for (Cuenta cuenta : usuario.obtenerCuentas()) {
+	        for (Actividad actividad : cuenta.obtenerActividades()) {
+	            resultado.add(actividad.describir());
+	        }
+	    }
+	    
+	    return resultado;
 	}
 
 	@Override
 	public double obtenerTotalInvertido(String dniUsuario) {
-		// TODO Auto-generated method stub
-		return 0;
+		if(!usuarios.containsKey(dniUsuario)) {
+			throw new IllegalArgumentException("El usuario no existe.");
+
+		}
+		return usuarios.get(dniUsuario).obtenerTotalInvertido();
 	}
 
 	@Override
 	public List<String> cuentasConMayorVolumen(int cantidadTop) {
-		// TODO Auto-generated method stub
-		return null;
+	    //valida
+		if (cantidadTop <= 0)
+	        throw new IllegalArgumentException("La cantidad debe ser positiva");
+
+	    List<Cuenta> listaCuentas = new ArrayList<Cuenta>(cuentas.values());
+	    //recorre con burbujeo y ordena
+	    for (int i = 0; i < listaCuentas.size() - 1; i++) {
+	        for (int j = i + 1; j < listaCuentas.size(); j++) {
+	            if (listaCuentas.get(i).obtenerActividades().size() < 
+	                listaCuentas.get(j).obtenerActividades().size()) {
+	                Cuenta temp = listaCuentas.get(i);
+	                listaCuentas.set(i, listaCuentas.get(j));
+	                listaCuentas.set(j, temp);
+	            }
+	        }
+	    }
+
+	    List<String> resultado = new ArrayList<String>();
+	    for (int i = 0; i < cantidadTop && i < listaCuentas.size(); i++) {
+	        resultado.add(listaCuentas.get(i).toString());
+	    }
+	    //devuelce las cuentas con mayor volumen
+	    return resultado;
+	}
+	//estado del sistema
+	@Override
+	public String toString() {
+	    StringBuilder sb = new StringBuilder();
+	    sb.append("=== BILLETERA ===\n");
+	    
+	    sb.append("\n-- USUARIOS --\n");
+	    for (Usuario usuario : usuarios.values()) {
+	        sb.append(usuario.toString()).append("\n");
+	    }
+	    
+	    sb.append("\n-- EMPRESAS --\n");
+	    for (Empresa empresa : empresas.values()) {
+	        sb.append(empresa.toString()).append("\n");
+	    }
+	    
+	    sb.append("\n-- CUENTAS --\n");
+	    for (Cuenta cuenta : cuentas.values()) {
+	        sb.append(cuenta.toString()).append("\n");
+	    }
+	    
+	    sb.append("\n-- ACTIVIDADES --\n");
+	    for (Actividad actividad : actividades) {
+	        sb.append(actividad.describir()).append("\n");
+	    }
+	    
+	    return sb.toString();
 	}
 }
