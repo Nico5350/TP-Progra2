@@ -1,6 +1,7 @@
 package main;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public abstract class Cuenta {
 
@@ -48,6 +49,23 @@ public abstract class Cuenta {
 
     public Usuario obtenerTitular() {
         return titular;
+    }
+    public void validarDeposito(double monto) {
+       
+    }
+    
+    public Inversion buscarInversion(int idInversion) {
+        Iterator<Actividad> it = actividades.iterator();
+        while (it.hasNext()) {
+            Actividad actividad = it.next();
+            if (actividad.esInversion()) {
+                Inversion inversion = (Inversion) actividad;
+                if (inversion.getId() == idInversion) {
+                    return inversion;
+                }
+            }
+        }
+        return null;
     }
 
     public abstract String obtenerTipo();

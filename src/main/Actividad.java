@@ -25,6 +25,9 @@ public abstract class Actividad {
 	public boolean estaAprobada() {
 		return aprobada;
 	}
+	public boolean esInversion() {
+	    return false;
+	}
 	
 	public abstract String describir(); //abstracto para transferencia e inversion
 	

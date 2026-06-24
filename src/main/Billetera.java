@@ -257,24 +257,7 @@ public class Billetera implements IBilletera {
 	        throw new IllegalArgumentException("La cuenta no existe");
 		}
 	    Cuenta cuenta = cuentas.get(cvu);
-	    Inversion inversionEncontrada = null;
-	    //recorre con foreach hasta encontrar la inversion
-	    // ahora recorre con un iterador
-	    Iterator<Actividad> it = cuenta.obtenerActividades().iterator();
-
-	    while (it.hasNext() && inversionEncontrada == null) {
-
-	        Actividad actividad = it.next();
-
-	        if (actividad.esInversion()) {
-
-	            Inversion inversion = (Inversion) actividad;
-
-	            if (inversion.getId() == idInversion) {
-	                inversionEncontrada = inversion;
-	            }
-	        }
-	    }
+	    Inversion inversionEncontrada = cuenta.buscarInversion(idInversion);
 
 	    if (inversionEncontrada == null)
 	        throw new IllegalArgumentException("La inversion no existe");{
@@ -380,6 +363,29 @@ public class Billetera implements IBilletera {
 	    //devuelce las cuentas con mayor volumen
 	    return resultado;
 	}
+	public void procesarInversionesQueVencenHoy() {
+	    for (Cuenta cuenta : cuentas.values()) {
+	        Iterator<Actividad> it = cuenta.obtenerActividades().iterator();
+	        while (it.hasNext()) {
+	            Actividad actividad = it.next();
+	            if (actividad.esInversion()) {
+	                Inversion inversion = (Inversion) actividad;
+	                if (inversion.estaActiva()) {
+	                    int diasTotales = inversion.obtenerFechaInicio().getDayOfYear() + inversion.obtenerPlazoDias();
+	                    int hoy = Utilitarios.hoy().getDayOfYear();
+	                    if (hoy >= diasTotales) {
+	                        double rendimiento = inversion.calcularRendimiento();
+	                        double montoADevolver = inversion.obtenerMonto() + rendimiento;
+	                        cuenta.depositar(montoADevolver);
+	                        cuenta.obtenerTitular().restarInvertido(inversion.obtenerMonto());
+	                        inversion.cancelar();
+	                    }
+	                }
+	            }
+	        }
+	    }
+	}
+	
 	//estado del sistema
 	@Override
 	public String toString() {

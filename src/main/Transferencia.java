@@ -1,6 +1,5 @@
 package main;
 
-import java.time.LocalDate;
 
 public class Transferencia extends Actividad{
 	private String dniOrigen;

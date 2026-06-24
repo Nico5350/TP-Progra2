@@ -22,9 +22,14 @@ public abstract class Inversion extends Actividad{
         this.fechaInicio = Utilitarios.hoy();
         this.activa = true;
     }
-	
-	public int getDni() {
+	public boolean esInversion() {
+	    return true;
+	}
+	public int getId() {
 		return id;
+	}
+	public String getDni() {
+		return dni;
 	}
 	public int getPlazoDias() {
 		return plazoDias;
@@ -41,7 +46,21 @@ public abstract class Inversion extends Actividad{
 	public void cancelar() {
 		activa = false;
 	}
-	
+	public double obtenerMonto() {
+		return getMonto();
+	}
+	public int obtenerPlazoDias() {
+		return plazoDias;
+	}
+	public LocalDate obtenerFechaInicio() {
+		return fechaInicio;
+	}
+	public boolean esPrecancelable() {
+		return true;
+	}
+	public double calcularDevolucion() {
+		return obtenerMonto() + calcularRendimiento() / 2;
+	}
 	public abstract double calcularRendimiento();
 	
 	public abstract String describir(); // formatos distintos de inversion
